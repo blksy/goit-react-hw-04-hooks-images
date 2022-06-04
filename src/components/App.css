@@ -1,0 +1,14 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    margin-right: auto;
+    margin-left: auto;
+    width: 600px;
+    align-items: center;
+    
+}
+
+h2{
+    font-size: 25px;
+    font-weight: 700;
+}
