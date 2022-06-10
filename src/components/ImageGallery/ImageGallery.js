@@ -12,70 +12,86 @@ const Status = {
   REJECTED: "rejected",
   MODAL: "modal"
 }
+export default function ImageGallery({imgName}) {
+  const [hits, setHits] = useState([])
+  const [modalImg, setModalImg] = useState("")
+  const [error, setError] = useState(null)
+  const [page, setPage] = useState(0)
+  const [maxPage, setMaxPage] = useState(0)
+  const [showLoadMore, setShowLoadMore] = useState(false)
+  const [status,setStatus] = useState("waiting")
+  const [prevImgName, setPrevImgName] = useState("")
 
-export default class ImageGallery extends Component {
-  state = {
-    hits: null,    
-    modalImg: "",    
-    error: null,
-    page: 1,
-    maxPage: 0,
-    showLoadMore: false,
-    status: "waiting"
+  const showModal = (img) => {
+    setModalImg(img)
+    setStatus(Status.MODAL)
   }
 
-  showModal = (img) => {
-    this.setState({modalImg: img, status: Status.MODAL})
+ const closeModal = () => {
+    setStatus(Status.REJECTED)
   }
 
-  closeModal = () => {
-    this.setState({status: Status.REJECTED})
+useEffect(() => {
+if (imgName !== prevImgName){
+  setPage(0)
+  setStatus(Status.LOADING)
+  setHits(null)
+  setPrevImgName(imgName)
+  setPage(1)
   }
-  
-  async componentDidUpdate(prevProps, prevState) {
-    const prevName = prevProps.imgName;
-    const nextName = this.props.imgName;
-    
-    if  (prevName !== nextName) {
-      await this.setState({status: Status.LOADING, page: 1, hits: null })
-             API.FetchImg(nextName, this.state.page)
-            .then(data=>{(data.total>0) ? this.setState({hits: data.hits, error: null}) : this.setState({error: true, hits: null}); if(data.total>12){this.setState({maxPage: Math.ceil(data.totalHits/12), showLoadMore: true})}})
-            .catch(error=>this.setState({error}))
-            .finally(()=>{this.setState({status: Status.REJECTED})})
-          
-    }
+}, [imgName])
+
+useEffect(()=>{
+if (page>0){
+  API.FetchImg(imgName, page)
+  .then(data => {
+    if (page === 1) {
+      if (data.total>0 && data.total<=12){
+             setHits(data.hits)
+              setError(null)
+             }
+      if (data.total===0){
+             setError(true)
+             setHits(null)
+           }
+      if (data.total>12){
+                 setMaxPage(Math.ceil(data.totalHits/12))
+                 setHits(data.hits)
+                 setShowLoadMore(true)
+                 setError(null)
+                 }
+    }else {setHits([...hits, ...data.hits])}
+})
+.finally(()=>{
+  setStatus(Status.REJECTED);
+  setShowLoadMore(true);
+  if (page>=2) {
+    scroll()
   }
+})}
+}, [page, prevImgName])
 
- loadMore = async ()=>{
-    
-     await this.setState({status: Status.LOADING, page: this.state.page + 1, showLoadMore: false})
-        this.scroll()
-    
-        API.FetchImg(this.props.imgName, this.state.page)
-        .then(data => this.setState({hits: [...this.state.hits, ...data.hits]}))
-        .finally(()=>{this.setState({status: Status.REJECTED, showLoadMore: true}); this.scroll()})
-        
- }
-
- scroll() {
-    window.scrollBy({
-    top: 500,
-    behavior: 'smooth',
-    })  
-    
+function loadMore () {
+ setStatus(Status.LOADING)
+ setShowLoadMore(false)
+ setPage(page+1)
 }
-  
-  render() {
 
-    const {error, hits, status, maxPage} = this.state
-    return (   
-        <section>
-        {error && <div className='wrap'><h2>Zdjęcia z nazwą <span className='wrapper'>{this.props.imgName}</span> Nie znaleziono</h2></div>}
-        {this.props.imgName === "" && <div className='wrap'><h2>Wpisz tekst, aby wyszukać zdjęcie</h2></div>}
-        {hits && <><ul className="gallery">{this.state.hits.map(img => <ImageGalleryItem key={img.id} URL={img.webformatURL} largeImg={img.largeImageURL} alt={this.props.imgName} showModal={this.showModal} />)}</ul> </>}     
-        {status === "loading" && <Loader/>}
-        {maxPage !== this.state.page && this.state.hits && this.state.showLoadMore && <Button loadMore={this.loadMore}/> }   
-        { status === "modal" && <Modal  URL={this.state.modalImg} closeModal={this.closeModal}  />}      
-        </section>)
-  }
+const scroll = () => {
+  window.scrollBy({
+  top: 500,
+  behavior: 'smooth',
+  })
 }
+
+return (
+  <section>
+  {error && <div className='wrap'><h2>Zdjęcia z nazwą  <span className='wrapper'>{imgName}</span> Nie znaleziono</h2></div>}
+  {imgName === "" && <div className='wrap'><h2>Wpisz tekst, aby wyszukać zdjęcie</h2></div>}
+  {hits && <><ul className="gallery">{hits.map(img => <ImageGalleryItem key={img.id} URL={img.webformatURL} largeImg={img.largeImageURL} alt={imgName} showModal={showModal} />)}
+  </ul> </>}
+  {status === "loading" && <Loading/>}
+  {maxPage !== page && hits && showLoadMore && <Button loadMore={loadMore}/> }
+  { status === "modal" && <Modal  URL={modalImg} closeModal={closeModal}  />}
+  </section>
+)}

@@ -2,54 +2,46 @@ import React, { Component } from 'react'
 import "./Searchbar.scss"
 import { FiSearch } from "react-icons/fi";
 
+export default function Searchbar({onSubmit}) {
+  const [query, setQuery] = useState('')
 
-export default class Searchbar extends Component {
+  const handleSubmit = e => {
+    e.preventDefault();
 
-state = {
-  query: ""
-}
-
-handleSubmit = e => {
-  e.preventDefault();
-
-  if(this.state.query.trim() === "") {
-    alert("Wpisz nazwę, aby wyszukać obrazy")
-    return
+    if(query.trim() === "") {
+      alert("Wpisz nazwę, aby wyszukać obrazy")
+      return
+    }
+    onSubmit(query)
+    setQuery("")
+    ;
   }
-  this.props.onSubmit(this.state.query)
-  this.setState({ query: "" })
-  ;
-}
 
-handelInputChange  = e => {
-  const {value} = e.currentTarget
-  this.setState({ query: value });
-  
-};
-  
-  render() {
-   
-    return (
-      <>
-        <header className="searchbar">
-          <form className="form" onSubmit={this.handleSubmit} >
-            <button type="submit" className="button">
-               <FiSearch/>
-            </button>
+  const handelInputChange  = e => {
+    const {value} = e.currentTarget
+    setQuery(value);
+  };
 
-            <input
-              value={this.state.query}
-              name='value'
-              className="input"
-              type="text"
-              autoComplete="off"
-              autoFocus
-              placeholder="Search images and photos"
-              onChange={this.handelInputChange}
-            />
-          </form>
-        </header>
-      </>
-    )
-  }
+  return (
+    <>
+      <header className="searchbar">
+        <form className="form" onSubmit={handleSubmit} >
+          <button type="submit" className="button">
+             <FiSearch/>
+          </button>
+
+          <input
+            value={query}
+            name='value'
+            className="input"
+            type="text"
+            autoComplete="off"
+            autoFocus
+            placeholder="Search images and photos"
+            onChange={handelInputChange}
+          />
+        </form>
+      </header>
+    </>
+  )
 }
